@@ -18,15 +18,15 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
-@Mod(CoyoteSocketControl.MOD_ID)
-public class CoyoteSocketControl
+@Mod(CoyoteWithMC.MOD_ID)
+public class CoyoteWithMC
 {
     // Define mod id in a common place for everything to reference
     public static final String MOD_ID = "coyote_socket_control";
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public CoyoteSocketControl()
+    public CoyoteWithMC()
     {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
