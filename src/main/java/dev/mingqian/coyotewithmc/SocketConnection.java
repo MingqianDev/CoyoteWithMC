@@ -14,13 +14,16 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import dev.mingqian.coyotewithmc.event.ClientEvents;
 import dev.mingqian.coyotewithmc.util.QRCodeUtil;
+import io.nayuki.qrcodegen.QrCode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -30,6 +33,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 
@@ -73,27 +77,45 @@ public class SocketConnection {
         System.out.println(msg.toString());
     }
 
-    private static void genQRCode() throws WriterException, IOException {
+    private static void genQRCode() throws IOException {
         String content = "";
         final int width = 400;
         final int height = 400;
         final String charset = "UTF-8";
-        final String imgPath = "./resources/assets/coyotesocketcontrol/images/DG-LAB logo.jpg";
         final String destPath = "QRCode.png";
+        // Error correction level
+        QrCode.Ecc errCorLvl = QrCode.Ecc.MEDIUM;
+        File file = new File("QRCode.png");
+//        file.mkdir();
 
         if (!clientId.isEmpty()) {
             content = "https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#" + address + clientId;
         } else {
             Minecraft.getInstance().player.sendSystemMessage(Component.literal("failed to get ClientID please try again"));
+            return;
         }
 
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        BitMatrix bitMatrix = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, width, height);
+        Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file.getAbsolutePath())).withUnderlined(true);
+        Minecraft.getInstance().player.sendSystemMessage(Component.literal("Click here to open QrCode").setStyle(style));
 
-        Path path = FileSystems.getDefault().getPath(destPath);
-        MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
+        // generate Qr code
+        QrCode qr = QrCode.encodeText(content, errCorLvl);  // Make the QR Code symbol
+
+        BufferedImage img = toImage(qr, 10, 4);
+        ImageIO.write(img, "png", file);
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+
+
+
+
+
+//        BitMatrix bitMatrix = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, width, height);
+//
+//        Path path = FileSystems.getDefault().getPath(destPath);
+//        MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
     }
+
 
     public static void connectServer() {
         HttpClient client = HttpClient.newHttpClient();
@@ -114,30 +136,26 @@ public class SocketConnection {
 //                            Minecraft.getInstance().player.sendSystemMessage(Component.literal("clientId received " + clientId));
 
                             String link = "https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#" + address + clientId;
-                            Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, link + address + clientId)).withUnderlined(true);
 
-                            Minecraft.getInstance().player.sendSystemMessage(Component.literal("click me").setStyle(style));
 
                             //TODO: make QR code
 
 
-//                            try {
-//                                genQRCode();
-//                            } catch (WriterException | IOException e) {
-//                                e.printStackTrace();
-//                            }
+                            try {
+                                genQRCode();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
 
                         } else if (!res.get("targetId").getAsString().isEmpty()) {
                             //TODO: received targetId
                             targetId = res.get("targetId").getAsString();
                             System.out.println("got targetId: " + targetId);
-                            Minecraft.getInstance().player.sendSystemMessage(Component.literal("got targetId: " + targetId));
+                            Minecraft.getInstance().player.sendSystemMessage(Component.literal("Successfully connected to the DG-LAB app!"));
                         }
                         break;
                     case "heartbeat":
                         System.out.println("heartbeat received");
-                        Minecraft.getInstance().player.sendSystemMessage(Component.literal("heartbeat received"));
-                        webSocket.sendText("heartbeat", true);
                         break;
                     case "break":
                         //TODO
@@ -167,6 +185,29 @@ public class SocketConnection {
             Minecraft.getInstance().player.sendSystemMessage(Component.literal("Connection fail, please check Websocket server URL"));
         }
 
+    }
+
+    /*---- Utilities ----*/
+
+    private static BufferedImage toImage(QrCode qr, int scale, int border) {
+        return toImage(qr, scale, border, 0xFFFFFF, 0x000000);
+    }
+
+    private static BufferedImage toImage(QrCode qr, int scale, int border, int lightColor, int darkColor) {
+        Objects.requireNonNull(qr);
+        if (scale <= 0 || border < 0)
+            throw new IllegalArgumentException("Value out of range");
+        if (border > Integer.MAX_VALUE / 2 || qr.size + border * 2L > Integer.MAX_VALUE / scale)
+            throw new IllegalArgumentException("Scale or border too large");
+
+        BufferedImage result = new BufferedImage((qr.size + border * 2) * scale, (qr.size + border * 2) * scale, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < result.getHeight(); y++) {
+            for (int x = 0; x < result.getWidth(); x++) {
+                boolean color = qr.getModule(x / scale - border, y / scale - border);
+                result.setRGB(x, y, color ? darkColor : lightColor);
+            }
+        }
+        return result;
     }
 
 }
