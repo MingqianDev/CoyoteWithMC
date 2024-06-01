@@ -127,9 +127,6 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.google.zxing:javase:3.5.3'
-    implementation 'com.google.zxing:core:3.5.3'
-
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.google.code.gson:gson:2.11.0'
