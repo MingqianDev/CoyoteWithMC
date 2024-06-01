@@ -64,7 +64,7 @@ public class CoyoteWithMC
     @SubscribeEvent
     public void onPlayerHurt(LivingHurtEvent event) {
         if (event.getEntity() instanceof Player player){
-            player.sendSystemMessage(Component.literal((player.getName().getString() + " got hurt")));
+            System.out.println(player.getName().getString() + " got hurt");
 
             if (!SocketConnection.targetId.isEmpty()) {
                 SocketConnection.sendPulse();

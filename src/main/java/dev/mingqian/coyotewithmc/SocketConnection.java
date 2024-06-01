@@ -103,7 +103,7 @@ public class SocketConnection {
 
         BufferedImage img = toImage(qr, 10, 4);
         ImageIO.write(img, "png", file);
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+//        QRCodeWriter qrCodeWriter = new QRCodeWriter();
 
 
 
